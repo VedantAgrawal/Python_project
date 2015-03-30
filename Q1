@@ -1,0 +1,131 @@
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from numpy import arange
+        
+class LPsolver:
+
+    def __init__(self):                                                     
+        self.objective=None
+        self.constraints=None
+        self.table=None
+        self.result=None
+    
+    def solve(self,L,M,option):
+        return (self.Simplex(L,M))
+
+    def Simplex(self,L,M):                                                  
+        from numpy import array
+        self.objective=array(L,float)
+        self.constraints=array(M,float)
+        no_of_variables=len(self.objective)                                 
+        no_of_equations=len(self.constraints)                               
+        self.table=array([[0 for i in range(no_of_variables+no_of_equations+2)] for j in range(no_of_equations+1)],float)   
+        for i in range(no_of_equations):
+            for j in range(no_of_variables):
+                self.table[i][j]=self.constraints[i][j]                     
+        for i in range(no_of_variables):
+            self.table[-1][i]=(-1)*self.objective[i]                        
+        for i in range(no_of_equations+1):
+            self.table[i][no_of_variables+i]=1                              
+        for i in range(no_of_equations):
+            self.table[i][-1]=self.constraints[i][-1]                       
+        self.table[-1][-1]=0                                                
+        for i in range(no_of_equations+1):
+            self.table[i][no_of_variables+i]=self.table[i][-1]/self.table[i][no_of_variables+i]
+        flag=0
+        if(min(self.table[-1])>=0):                                         
+            flag=1
+        while(flag==0):                                                     
+            pivot_col=self.table[-1].tolist().index(min(self.table[-1]))    
+            pivot_row,temp,flag2=-1,0,0                                         
+            for i in range(no_of_equations):                                                        
+                if(self.table[i][pivot_col]>0 and (pivot_row==-1 or self.table[i][-1]/self.table[i][pivot_col]<temp)):   
+                    pivot_row=i
+                    temp=self.table[i][-1]/self.table[i][pivot_col]
+                    flag2=1
+            if(flag2==0):
+                return ("Unbound")                                           
+            pivot=self.table[pivot_row][pivot_col]
+            for i in range(no_of_equations+1):                              
+                if(i==pivot_row):
+                    continue
+                scale=self.table[i][pivot_col]/pivot
+                self.table[i]=self.table[i]-(scale*self.table[pivot_row])
+            if(min(self.table[-1])>=0):
+                flag=1                                                      
+            x_pos,y_pos,count_1,count_2=0,0,0,0
+            for i in range(no_of_equations+1):
+                if(self.table[i][0]!=0):
+                    count_1+=1
+                    x_pos=self.table[i][-1]/self.table[i][0]
+                if(self.table[i][1]!=0):
+                    count_2+=1
+                    y_pos=self.table[i][-1]/self.table[i][1]
+            if(count_1>1):
+                x_pos=0
+            if(count_2>1):
+                y_pos=0
+            plt.plot(x_pos,y_pos,"o",color="r")
+        self.result=""                                                      
+        for i in range(no_of_variables):                                    
+            count,temp,flag=0,0,1
+            for j in range(no_of_equations+1):
+                if(self.table[j][i]!=0):
+                    count+=1
+                    if(count>1):
+                        flag=0
+                        break
+                    temp=self.table[j][-1]/self.table[j][i]
+            if(flag==1):
+                self.result+="x_"+str(i+1)+" = "+str(temp)+" ; "
+            else:
+                self.result+="x_"+str(i+1)+"=0 ; "
+        self.result+="Maximum value of objective = "+str(self.table[-1][-1])
+        self.plot()
+        return (self.result)
+    def plot(self):
+        Color=["b","r","g","m","y"]
+        c=0                                                                 
+        plt.xlabel("values of x")                                            
+        plt.ylabel("values of y")                                            
+        Legend=[]
+        xmax,ymax=0,0
+        for i in self.constraints:                                          
+            if(i[0]!=0):
+                temp=i[2]/i[0]
+                if(temp>xmax):
+                    xmax=temp
+            if(i[1]!=0):
+                temp=i[2]/i[1]
+                if(temp>ymax):
+                    ymax=temp
+        for i in self.constraints:                                          
+            if(i[0]!=0 and i[1]!=0):
+                plt.plot([0,i[2]/i[0]],[i[2]/i[1],0],color=Color[c%5])
+                x=list(arange(0,i[2]/i[0],0.01))
+                y1=list(map(lambda X:(i[2]-i[0]*X)/i[1],x))
+                y2=list(map(lambda X:0,x))
+                plt.fill_between(x,y1,y2,color=Color[c%5],alpha=0.6)
+            elif(i[0]!=0):
+                plt.axvline(i[2],color=Color[c%5])
+                x=list(arange(0,i[2]/i[0],0.01))
+                y1=list(map(lambda X:ymax,x))
+                y2=list(map(lambda X:0,x))
+                plt.fill_between(x,y1,y2,color=Color[c%5],alpha=0.6)        
+            else:
+                plt.axhline(i[2],color=Color[c%5])
+                x=list(arange(0,xmax,0.01))
+                y1=list(map(lambda X:i[2]/i[1],x))
+                y2=list(map(lambda X:0,x))
+                plt.fill_between(x,y1,y2,color=Color[c%5],alpha=0.6)        
+            Legend.append(mpatches.Patch(color=Color[c%5],label="Constraint number "+str(c+1)))    
+            c+=1
+        Legend.append(mpatches.Patch(color="w",label="The required region is the innermost one"))
+        Legend.append(mpatches.Patch(color="w",label="and its boundary points are the critical points"))
+        plt.legend(handles=Legend)                                          
+        plt.show()                                                          
+
+lps=LPsolver()                                                              
+solution=lps.solve([3,2],[[2,1,18],[2,3,42],[3,1,24]],option="Simplex")     
+print(solution)
+
