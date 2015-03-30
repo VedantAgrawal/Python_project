@@ -68,6 +68,6 @@ class PolynomialSolver:
 			it=int(input())
 			while(abs(self.F(n,L,l))>0.00001 and it>0):
 				l=l-self.F(n,L,l)/self.Fder(n,L,l)
-			return(l)
+			return (l)
 		else:
 			return NULL
