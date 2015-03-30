@@ -1,73 +1,121 @@
-#Q3
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from numpy import arange
+from numpy import array
+from numpy.polynomial import polynomial as P
+
 class PolynomialSolver:
-	def F(self,n,L,val):
-		k=0
-		for i in range(n+1):
-			k+=L[i]*(val**i)
-		return k
-	def Fder(self,n,L,val):
-		k=0
-		for i in range(1,n+1):
-			k+=i*L[i]*(val**(i-1))
-		return k
-	def solve(self,n,L,method):
-		if(method=='bisection'):
-			print("Enter lower bound of interval in which root lies")
-			l=int(input())
-			print("Enter upper bound of interval in which root lies")
-			u=int(input())
-			print("Enter maximum number of itertions")
-			it=int(input())
-			while(abs(self.F(n,L,l)-self.F(n,L,u))>0.00001 and it>0):
-				m=(l+u)/2
-				if(self.F(n,L,l)*self.F(n,L,m)<0):
-					u=m
-				else:
-					l=m
-				print (l,u,self.F(n,L,l),self.F(n,L,u))
-				it-=1
-			return([l,u])
-		if(method=='secant'):
-			print("Enter lower bound of interval in which root lies")
-			l=int(input())
-			print("Enter upper bound of interval in which root lies")
-			u=int(input())
-			print("Enter maximum number of itertions")
-			it=int(input())
-			while(abs(self.F(n,L,l))>0.00001 and it>0):
-				f1=self.F(n,L,l)
-				f2=self.F(n,L,u)
-				l,u=u,u-(((u-l)*f2)/(f2-f1))
-				print (l,u,f1,f2)
-				it-=1
-			return(l)
-		if(method=='secantRF'):
-			print("Enter lower bound of interval in which root lies")
-			l=int(input())
-			print("Enter upper bound of interval in which root lies")
-			u=int(input())
-			m=l
-			print("Enter maximum number of itertions")
-			it=int(input())
-			while(abs(self.F(n,L,m))>0.00001 and it>0):
-				f1=self.F(n,L,l)
-				f2=self.F(n,L,u)
-				m=u-(((u-l)*f2)/(f2-f1))
-				fm=self.F(n,L,m)
-				if(f1*fm<0):
-					u=m
-				else:
-					l=m
-				print (m)
-				it-=1
-			return(l)
-		if(method=='newtonraphson'):
-			print("Enter lower bound of interval in which root lies")
-			l=int(input())
-			print("Enter maximum number of itertions")
-			it=int(input())
-			while(abs(self.F(n,L,l))>0.00001 and it>0):
-				l=l-self.F(n,L,l)/self.Fder(n,L,l)
-			return (l)
-		else:
-			return NULL
+
+    def __init__(self):
+        self.order=None
+        self.co_eff=None
+        self.interval=None
+        self.initial_guess=None
+        self.max_iterations=None
+        self.accuracy=None
+
+    def solve(self,order,co_eff,interval,method,initial_guess1=[-1,1],initial_guess2=1,max_iterations=10000,accuracy=0.0001):
+
+        if(method=="bisection"):
+            return (self.BisectionSearch(co_eff,interval,max_iterations,accuracy))
+        elif(method=="secant"):
+            return (self.Secant(co_eff,initial_guess1,max_iterations,accuracy))
+        elif(method=="secantrf"):
+            return (self.SecantRF(co_eff,initial_guess1,max_iterations,accuracy))
+        else:
+            return (self.NewtonRaphson(co_eff,initial_guess2,max_iterations,accuracy))
+
+    def BisectionSearch(self,L,interval,max_iterations,accuracy):           
+        
+        self.co_eff=L
+        self.interval=interval
+        self.max_iterations=max_iterations
+        self.accuracy=accuracy
+        count=0                                                             
+
+        x=list(arange(self.interval[0],self.interval[1],0.01))
+        y=list(map(lambda num:P.polyval(num,self.co_eff),x))
+        plt.plot(x,y,linewidth=2.5,color="m")                                           
+        plt.axhline(0,color="k",linewidth=2.5)
+        plt.plot(self.interval,[-30,-30],color="c")                         
+        plt.xlabel("values of x")
+        plt.ylabel("values of y")
+        Legend=[]                                                                
+        Legend.append(mpatches.Patch(color="m",label="Polynomial graph"))   
+        Legend.append(mpatches.Patch(color="c",label="required interval"))
+        plt.legend(handles=Legend)                                          
+
+        while(count<self.max_iterations):
+            if(P.polyval(self.interval[0],self.co_eff)*P.polyval(self.interval[1],self.co_eff)<0 and self.interval[1]-self.interval[0]<=self.accuracy):  
+                plt.show()                                                  
+                return (self.interval)                                      
+            m=(self.interval[0]+self.interval[1])/2
+            if(P.polyval(self.interval[0],self.co_eff)*P.polyval(m,self.co_eff)<0):
+                self.interval=[self.interval[0],m]                          
+            else:
+                self.interval=[m,self.interval[1]]                          
+            self.plot((count+2)*30)
+            count+=1
+        return ("Iterations exceed limit")
+    
+    def plot(self,temp):
+        plt.plot(self.interval,[-1*temp,-1*temp],color="c")
+        plt.plot([self.interval[0],self.interval[0]],[-1*temp-5,-1*temp+5],color="c")
+        plt.plot([self.interval[1],self.interval[1]],[-1*temp-5,-1*temp+5],color="c")
+        
+    def Secant(self,L,initial_guess,max_iterations,accuracy):               
+        
+        self.co_eff=L
+        self.initial_guess=initial_guess
+        self.max_iterations=max_iterations
+        self.accuracy=accuracy
+        x,y=self.initial_guess[0],self.initial_guess[1]                     
+        count=0                                                             
+        while(count<self.max_iterations):
+            z=y-P.polyval(y,self.co_eff)*((y-x)/(P.polyval(y,self.co_eff)-P.polyval(x,self.co_eff))) 
+            if(abs(P.polyval(z,self.co_eff))<=self.accuracy):              
+                return (z)                                                 
+            x,y=y,z                                                        
+            count+=1
+        return ("Iterations exceed limit")
+
+    def SecantRF(self,L,initial_guess,max_iterations,accuracy):            
+        
+        self.co_eff=L
+        self.initial_guess=initial_guess
+        self.max_iterations=max_iterations
+        self.accuracy=accuracy
+        x,y=self.initial_guess[0],self.initial_guess[1]                     
+        count=0                                                             
+        while(count<self.max_iterations):
+            z=y-P.polyval(y,self.co_eff)*((y-x)/(P.polyval(y,self.co_eff)-P.polyval(x,self.co_eff))) 
+            if(abs(P.polyval(z,self.co_eff))<=self.accuracy):              
+                return (z)                                                 
+            if(P.polyval(x,self.co_eff)*P.polyval(z,self.co_eff)>0):       
+                x,y=z,y
+            else:
+                x,y=x,z                                                     
+            count+=1
+        return ("Iterations exceed limit")
+
+    def NewtonRaphson(self,L,initial_guess,max_iterations,accuracy):        
+        
+        self.co_eff=L
+        self.initial_guess=initial_guess
+        self.max_iterations=max_iterations
+        self.accuracy=accuracy
+        derivative=P.polyder(self.co_eff)                                   
+        x=self.initial_guess                                                
+        count=0                                                             
+        while(count<self.max_iterations):
+            y=x-(P.polyval(x,self.co_eff)/P.polyval(x,derivative))          
+            if(abs(P.polyval(y,self.co_eff))<=self.accuracy):               
+                return (y)                                                  
+            x=y                                                             
+            count+=1
+        return ("Iterations exceed limit")
+
+ps=PolynomialSolver()                                                     
+for method in ["bisection","secant","secantrf","newtonraphson"]:
+    solution=ps.solve(2,[500,-60,1],[15,60],method,[1,15],1,10000,0.0001)
+    print(solution)
