@@ -1,0 +1,87 @@
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from numpy import arange
+import math
+from math import *
+class Integrate:
+
+    def __init__(self):
+        self.function=None
+        self.interval=None
+        self.no_of_partitions=None
+        self.result=None
+
+    def solve(self,S,interval,method,N=10000):
+        
+        
+        if(method=="trapezoid"):
+            return (self.TrapezoidalRule(S,interval,N))
+        else:
+            return (self.SimpsonsRule(S,interval,N))
+    
+    def TrapezoidalRule(self,S,interval,N):                                 
+              
+        self.interval=interval
+        self.no_of_partitions=N
+        try:
+            (lambda x:eval(S))(self.interval[0])
+            self.function=lambda x:eval(S)                                  
+        except:
+            return("Input is not in proper Python syntax")
+        length=(self.interval[1]-self.interval[0])/self.no_of_partitions    
+        sum_of_values=self.function(self.interval[0])                       
+        for i in range(1,N):                                                
+            sum_of_values+=2*self.function(self.interval[0]+length*i)
+        sum_of_values+=self.function(self.interval[1])
+        self.result=((self.interval[1]-self.interval[0])*sum_of_values)/(2*self.no_of_partitions)  
+        self.plot()
+        return (self.result)                                                
+    
+    def plot(self):
+        length=(self.interval[1]-self.interval[0])/self.no_of_partitions    
+        x=list(arange(self.interval[0],self.interval[1],0.01))
+        y=list(map(lambda X:self.function(X), x))
+        plt.plot(x,y,linewidth=2.5,color="r")                               
+        plt.plot([self.interval[0]]*2,[0,self.function(self.interval[0])],color="b")
+        prevx,prevy=self.interval[0],self.function(self.interval[0])
+        for i in range(self.no_of_partitions):
+            currentx=prevx+length
+            currenty=self.function(currentx)
+            plt.plot([currentx]*2,[0,currenty],color="b")
+            plt.plot([prevx,currentx],[prevy,currenty],color="b",linewidth=1.5)
+            prevx=currentx
+            prevy=currenty
+            
+        plt.axis("equal")
+        plt.axvline(0,color="k",linewidth=2.5)
+        plt.axhline(0,color="k",linewidth=2.5)
+        plt.xlabel("values of x")
+        plt.ylabel("values of y")
+        Legend=[]                                                           
+        Legend.append(mpatches.Patch(color="r",label="graph "))    
+        Legend.append(mpatches.Patch(color="b",label="Sides of trapeziums"))
+        plt.legend(handles=Legend)                                          
+        plt.show()          
+    
+    def SimpsonsRule(self,S,interval,N):                                    
+        
+        self.interval=interval
+        self.no_of_partitions=N
+        try:
+            (lambda x:eval(S))(self.interval[0])
+            self.function=lambda x:eval(S)                                  
+        except:
+            return("Input is not in proper Python syntax")
+        length=(self.interval[1]-self.interval[0])/(2*self.no_of_partitions)    
+        sum_of_values=self.function(self.interval[0])                       
+        for i in range(1,2*N):                                              
+            temp=self.function(self.interval[0]+length*i)
+            sum_of_values+=2*temp if i%2==0 else 4*temp
+        sum_of_values+=self.function(self.interval[1])
+        self.result=((self.interval[1]-self.interval[0])*sum_of_values)/(6*self.no_of_partitions)      
+        return (self.result)                                                      
+    
+igr=Integrate()                                                     
+for method in ["trapezoid","simpson"]:
+    solution=igr.solve("sin(x)**3+cos(x)**2",[-4,2],method,20)
+    print (solution)
